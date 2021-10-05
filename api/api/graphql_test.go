@@ -106,7 +106,7 @@ func TestSampleValueMinMaxSucceeds(t *testing.T) {
 	if err != nil {
 		t.Errorf("expected success; got %v", err)
 	}
-	if !reflect.DeepEqual(*sampleValueMax, expected) {
+	if *sampleValueMax != expected {
 		t.Errorf("expected %v; got %v", expected, *sampleValueMax)
 	}
 }
