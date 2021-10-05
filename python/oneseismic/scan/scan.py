@@ -259,7 +259,7 @@ class lineset(scanner):
         return r
 
 def tonative(trace, format, endian):
-    if endian == 'little': trace.byteswap(inplace=True)
+    if endian == 'little': trace.byteswap(inplace = True)
     return native(trace, format = format, copy = False)
 
 def scan(stream, action):
@@ -294,7 +294,6 @@ def scan(stream, action):
 
     tracelen  = action.tracelen()
     tracesize = header_size + tracelen
-    samples   = action.observed['samples']
 
     stream.seek(tracelen, io.SEEK_CUR)
 
@@ -311,7 +310,7 @@ def scan(stream, action):
         header = segyio.field.Field(buf = chunk[:header_size], kind = 'trace')
         action.add(header)
 
-        trace = np.ndarray(samples, 'f4', buffer=chunk[header_size:])
+        trace = np.frombuffer(chunk[header_size:])
         trace = tonative(trace.copy(), action.observed['format'], action.endian)
         action.scan_trace(trace)
 
