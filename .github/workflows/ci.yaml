@@ -59,6 +59,10 @@ jobs:
         working-directory: build
         run: ctest -C Release --output-on-failure
 
+      - name: Upgrade pip Windows
+        if: startsWith(matrix.os, 'windows')
+        run: python -m pip install --upgrade pip
+
       - name: Install python dependencies
         run: python -m pip install -r python/requirements-dev.txt
 
