@@ -47,7 +47,6 @@ class Scanner:
     def __init__(self, endian):
         self.endian = endian
         self.intp = parseint(endian = endian, default_length = 4)
-        self.observed = {}
 
     def scan_binary_header(self, binary):
         """Scan a SEG-Y binary header
