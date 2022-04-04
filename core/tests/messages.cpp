@@ -64,7 +64,6 @@ bool operator == (const one::manifestdoc& lhs, const one::manifestdoc& rhs) {
 TEST_CASE("well-formed slice-query is unpacked correctly") {
     const auto doc = R"({
         "pid": "some-pid",
-        "token": "on-behalf-of-token",
         "url-query": "",
         "guid": "object-id",
         "storage_endpoint": "https://storage.com",
@@ -103,7 +102,6 @@ TEST_CASE("well-formed slice-query is unpacked correctly") {
     one::slice_query query;
     query.unpack(doc, doc + std::strlen(doc));
     CHECK(query.pid   == "some-pid");
-    CHECK(query.token == "on-behalf-of-token");
     CHECK(query.guid  == "object-id");
     CHECK(query.manifest == manifest);
     CHECK(query.storage_endpoint == "https://storage.com");
@@ -114,7 +112,6 @@ TEST_CASE("well-formed slice-query is unpacked correctly") {
 TEST_CASE("unpacking query with missing field fails") {
     const auto entries = std::vector< std::string > {
         R"("pid": "some-pid")",
-        R"("token": "on-behalf-of-token")",
         R"("guid": "object-id")",
         R"("manifest": { "dimensions": [[]] })",
         R"("storage_endpoint": "http://storage.com")",
@@ -140,7 +137,6 @@ TEST_CASE("unpacking query with missing field fails") {
 TEST_CASE("unpacking message with wrong function tag fails") {
     const auto doc = R"({
         "pid": "some-pid",
-        "token": "on-behalf-of-token",
         "guid": "object-id",
         "manifest": { "dimensions": [[]] },
         "storage_endpoint": "https://storage.com",
@@ -159,7 +155,6 @@ TEST_CASE("unpacking message with wrong function tag fails") {
 TEST_CASE("slice-task can round trip packing") {
     one::slice_task task;
     task.pid = "pid";
-    task.token = "token";
     task.guid = "guid";
     task.storage_endpoint = "https://storage.com";
     task.shape = { 64, 64, 64 };
@@ -249,7 +244,6 @@ SCENARIO("Converting from UTM coordinates to cartesian grid") {
 SCENARIO("Unpacking a curtain request") {
     std::string doc = R"({
         "pid": "some-pid",
-        "token": "on-behalf-of-token",
         "url-query": "",
         "guid": "object-id",
         "storage_endpoint": "https://storage.com",
