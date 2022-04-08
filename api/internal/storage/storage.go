@@ -69,6 +69,9 @@ func (c *AzStorage) Get(ctx context.Context, bloburl *url.URL) ([]byte, error) {
 		switch status {
 		case http.StatusNotModified:
 			return cached.chunk, nil
+		case http.StatusNotFound:
+			msg := fmt.Sprintf("Not found: %s/%s", bloburl.Host, bloburl.Path)
+			return nil, internal.NotFound(msg)
 		case http.StatusForbidden:
 			return nil, internal.PermissionDeniedFromStatus(status)
 		case http.StatusUnauthorized:
