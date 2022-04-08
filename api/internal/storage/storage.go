@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -11,7 +12,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 
 	"github.com/equinor/oneseismic/api/internal"
-	"github.com/equinor/oneseismic/api/internal/util"
 )
 
 /*
@@ -108,7 +108,7 @@ func (c *AzStorage) download(
 
 	dl, err := client.Download(ctx, options)
 	if err != nil {
-		return cacheEntry{}, util.UnpackAzStorageError(err)
+		return cacheEntry{}, unpackAzStorageError(err)
 	}
 	body := dl.Body(&azblob.RetryReaderOptions{})
 	defer body.Close()
@@ -125,4 +125,25 @@ func NewAzStorage(cache blobCache) *AzStorage {
  */
 func newCacheKey(bloburl *url.URL) string {
 	return fmt.Sprintf("%s/%s", bloburl.Host, bloburl.Path)
+}
+
+/*
+ * Automate unwrapping of azblob.StorageError
+ *
+ * azblob methods such as azblob.BlobClient.Download will wrap any error in
+ * azblob.InternalError before returning to the caller. This is rather annoying
+ * if we want to switch on error type, or in the case of azblob.StorageError,
+ * the StorageErrorCode.
+ *
+ * This function undo the work of azblob by attempting to unpacking the wrapped
+ * StorageError. If the underlying error is not a azblob.StorageError, this is
+ * a no-op and the original error is returned.
+ */
+func unpackAzStorageError(err error) error {
+	var stgErr *azblob.StorageError
+	if errors.As(err, &stgErr) {
+		return *stgErr
+	}
+
+	return err
 }
