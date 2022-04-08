@@ -2,12 +2,16 @@ package storage
 
 import (
 	"context"
-	"net/url"
+	"fmt"
 	"io/ioutil"
+	"log"
+	"net/http"
+	"net/url"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 
 	"github.com/equinor/oneseismic/api/internal"
+	"github.com/equinor/oneseismic/api/internal/util"
 )
 
 /*
@@ -27,6 +31,7 @@ type StorageClient interface {
  * Azure Blob Store implementation of a oneseismic StorageClient
  */
 type AzStorage struct {
+	cache blobCache
 }
 
 func (c *AzStorage) Get(ctx context.Context, bloburl *url.URL) ([]byte, error) {
@@ -34,21 +39,85 @@ func (c *AzStorage) Get(ctx context.Context, bloburl *url.URL) ([]byte, error) {
 		return []byte{}, internal.InternalError("blob URL is nil")
 	}
 
-	client, err := azblob.NewBlobClientWithNoCredential(bloburl.String(), nil)
-	if err != nil {
-		return []byte{}, internal.InternalError(err.Error())
+	key     := newCacheKey(bloburl)
+	cached, hit := c.cache.get(key)
+
+	cold, err := c.download(ctx, bloburl, cached.etag)
+	if err == nil {
+		/* nil means the azblob.Download succeeded *and* was not etag match */
+		if hit {
+			/* This probably means expired ETag, which again means a fragment
+			* has been updated since cached. This should not happen in a
+			* healthy system and must be investigated immediately.
+			 */
+			log.Printf(
+				"ETag (= %s) expired for %v; investigate immediately",
+				*cached.etag,
+				bloburl,
+			)
+			return nil, internal.NewInternalError()
+		} else {
+			// This is good; not in cache, so clean fetch was expected.
+			go c.cache.set(key, cold)
+			return cold.chunk, nil
+		}
 	}
 
-	dl, err := client.Download(ctx, nil)
-	if err != nil {
-		return []byte{}, err
+	switch e := err.(type) {
+	case azblob.StorageError:
+		switch e.Response().StatusCode {
+		case http.StatusNotModified:
+			return cached.chunk, nil
+		default:
+			// TODO: what other codes can actually show up here? Forbidden? No such
+			// resource? For now, don't leak anything back, but log and add
+			// case-by-case
+			log.Printf("Unhandled azblob.StorageError: %v", err)
+			return nil, internal.InternalError(err.Error())
+		}
+	default:
+		log.Printf("Unhandled error type %T (= %v)", e, e)
+		return nil, internal.InternalError(err.Error())
 	}
 
-	body := dl.Body(&azblob.RetryReaderOptions{})
-	defer body.Close()
-	return ioutil.ReadAll(body)
+	return nil, err
 }
 
-func NewAzClient() *AzStorage {
-	return &AzStorage{}
+func (c *AzStorage) download(
+	ctx     context.Context,
+	bloburl *url.URL,
+	etag    *string,
+) (cacheEntry, error) {
+	client, err := azblob.NewBlobClientWithNoCredential(bloburl.String(), nil)
+	if err != nil {
+		return cacheEntry{}, internal.InternalError(err.Error())
+	}
+
+	options := &azblob.DownloadBlobOptions{
+		BlobAccessConditions: &azblob.BlobAccessConditions{
+			ModifiedAccessConditions : &azblob.ModifiedAccessConditions{
+				IfNoneMatch: etag,
+			},
+		},
+	}
+
+	dl, err := client.Download(ctx, options)
+	if err != nil {
+		return cacheEntry{}, util.UnpackAzStorageError(err)
+	}
+	body := dl.Body(&azblob.RetryReaderOptions{})
+	defer body.Close()
+	chunk, err := ioutil.ReadAll(body)
+	return cacheEntry { chunk: chunk, etag: dl.ETag }, err
+}
+
+func NewAzStorage(cache blobCache) *AzStorage {
+	return &AzStorage{cache: cache}
+}
+
+/*
+ * Creates a cache key from the host + path
+ */
+func newCacheKey(bloburl *url.URL) string {
+	return fmt.Sprintf("%s/%s", bloburl.Host, bloburl.Path)
 }
