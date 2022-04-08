@@ -61,3 +61,7 @@ func (c *noCache) set(key string, val cacheEntry) {}
 func (c *noCache) get(key string) (cacheEntry, bool) {
 	return cacheEntry{}, false
 }
+
+func NewNoCache() *noCache {
+	return &noCache{}
+}
