@@ -97,8 +97,9 @@ func main() {
 
 	gql := catalogue.MakeGraphQL(client)
 
-	role := "Read"
-	customClaims := auth.NewCustomClaims(&role, nil)
+	role  := "Read"
+	scope := "Catalogue.Read"
+	customClaims := auth.NewCustomClaims(&role, &scope)
 
 	provider := auth.GetJwksProvider(opts.authserver)
 	tokenvalidator := auth.JWTvalidation(
