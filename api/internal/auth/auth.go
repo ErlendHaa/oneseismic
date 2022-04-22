@@ -201,6 +201,16 @@ type CustomClaims struct {
  * Validate custom claims
  */
 func (c *CustomClaims) Validate(ctx context.Context) error {
+	validRole := c.validate(c.Roles, c.expectedRole)
+	if !validRole {
+		msg := fmt.Sprintf("Invalid claim 'Roles', expected: '%s'", *c.expectedRole)
+		return errors.New(msg)
+	}
+
+	return nil
+}
+
+func (c *CustomClaims) validate(claims []string, expected *string) bool {
 	/* Check if array/slice contains an element */
 	contains := func (slice []string, element string) bool {
 		for _, x := range slice {
@@ -211,19 +221,14 @@ func (c *CustomClaims) Validate(ctx context.Context) error {
 		return false
 	}
 
-	/* If expectedRole is not configured with a value there is no expectations
-	 * w.r.t. to the role-claim and it's considered valid.
+	/* If expected is not configured with a value there is no expectations
+	 * w.r.t. to this claim and it's considered valid.
 	 */
-	if c.expectedRole == nil {
-		return nil
+	if expected == nil {
+		return true
 	}
 
-	readRole := contains(c.Roles, *c.expectedRole)
-	if !readRole {
-		msg := fmt.Sprintf("Invalid claim 'Roles', expected: '%s'", *c.expectedRole)
-		return errors.New(msg)
-	}
-	return nil
+	return contains(claims, *expected)
 }
 
 func NewCustomClaims(expRole *string) *CustomClaims {
