@@ -194,6 +194,7 @@ func TestJWTValidation(t *testing.T) {
 				"nbf"   : time.Now().Add(time.Second * -1).Unix(),
 				"iat"   : time.Now().Add(time.Second * -1).Unix(),
 				"roles" : []string{"Read"},
+				"scp"   : "Catalogue.Read",
 			}),
 		},
 		{
@@ -207,6 +208,7 @@ func TestJWTValidation(t *testing.T) {
 				"nbf"   : time.Now().Add(time.Second * -1).Unix(),
 				"iat"   : time.Now().Add(time.Second * -1).Unix(),
 				"roles" : []string{"Read"},
+				"scp"   : "Catalogue.Read",
 			}),
 		},
 		{
@@ -220,6 +222,7 @@ func TestJWTValidation(t *testing.T) {
 				"nbf"   : time.Now().Add(time.Second * -1).Unix(),
 				"iat"   : time.Now().Add(time.Second * -1).Unix(),
 				"roles" : []string{"Read"},
+				"scp"   : "Catalogue.Read",
 			}),
 		},
 		{
@@ -233,6 +236,7 @@ func TestJWTValidation(t *testing.T) {
 				"nbf"   : time.Now().Add(time.Minute * -2).Unix(),
 				"iat"   : time.Now().Add(time.Minute * -2).Unix(),
 				"roles" : []string{"Read"},
+				"scp"   : "Catalogue.Read",
 			}),
 		},
 		{
@@ -246,6 +250,7 @@ func TestJWTValidation(t *testing.T) {
 				"nbf"   : time.Now().Add(time.Minute *  1).Unix(),
 				"iat"   : time.Now().Add(time.Second * -1).Unix(),
 				"roles" : []string{"Read"},
+				"scp"   : "Catalogue.Read",
 			}),
 		},
 		{
@@ -258,6 +263,7 @@ func TestJWTValidation(t *testing.T) {
 				"exp"   : time.Now().Add(time.Minute *  1).Unix(),
 				"nbf"   : time.Now().Add(time.Second * -1).Unix(),
 				"iat"   : time.Now().Add(time.Second * -1).Unix(),
+				"scp"   : "Catalogue.Read",
 			}),
 		},
 		{
@@ -271,6 +277,34 @@ func TestJWTValidation(t *testing.T) {
 				"nbf"   : time.Now().Add(time.Second * -1).Unix(),
 				"iat"   : time.Now().Add(time.Second * -1).Unix(),
 				"roles" : []string{"Invalid role"},
+				"scp"   : "Catalogue.Read",
+			}),
+		},
+		{
+			name:     "Missing 'scp' claim",
+			expected: http.StatusUnauthorized,
+			keyFunc:  rs256KeyFunc,
+			token:    withClaims(jwt.SigningMethodRS256, rs256PrivKey, jwt.MapClaims{
+				"iss"   : "valid issuer",
+				"aud"   : "valid audience",
+				"exp"   : time.Now().Add(time.Minute *  1).Unix(),
+				"nbf"   : time.Now().Add(time.Second * -1).Unix(),
+				"iat"   : time.Now().Add(time.Second * -1).Unix(),
+				"roles" : []string{"Read"},
+			}),
+		},
+		{
+			name:     "Invalid 'scp' claim",
+			expected: http.StatusUnauthorized,
+			keyFunc:  rs256KeyFunc,
+			token:    withClaims(jwt.SigningMethodRS256, rs256PrivKey, jwt.MapClaims{
+				"iss"   : "valid issuer",
+				"aud"   : "valid audience",
+				"exp"   : time.Now().Add(time.Minute *  1).Unix(),
+				"nbf"   : time.Now().Add(time.Second * -1).Unix(),
+				"iat"   : time.Now().Add(time.Second * -1).Unix(),
+				"roles" : []string{"Read"},
+				"scp"   : "invalid scp",
 			}),
 		},
 		{
@@ -284,6 +318,7 @@ func TestJWTValidation(t *testing.T) {
 				"nbf"   : time.Now().Add(time.Second * -1).Unix(),
 				"iat"   : time.Now().Add(time.Second * -1).Unix(),
 				"roles" : []string{"Read"},
+				"scp"   : "Catalogue.Read",
 			}),
 		},
 	}
@@ -293,7 +328,8 @@ func TestJWTValidation(t *testing.T) {
 		ctx, r := gin.CreateTestContext(w)
 
 		role := "Read"
-		customClaims := NewCustomClaims(&role)
+		scope  := "Catalogue.Read"
+		customClaims := NewCustomClaims(&role, &scope)
 
 		tokenValidation := JWTvalidation(
 			"valid issuer",

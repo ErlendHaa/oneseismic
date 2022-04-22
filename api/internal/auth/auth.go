@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -192,9 +193,11 @@ func ResultAuth(keyring *Keyring) gin.HandlerFunc {
  * Custom claims that we expect to be in the JWT
  */
 type CustomClaims struct {
-	Roles []string `json:"roles"`
+	Roles  []string `json:"roles"`
+	Scopes string   `json:"scp"`
 
-	expectedRole *string
+	expectedRole  *string
+	expectedScope *string
 }
 
 /*
@@ -204,6 +207,17 @@ func (c *CustomClaims) Validate(ctx context.Context) error {
 	validRole := c.validate(c.Roles, c.expectedRole)
 	if !validRole {
 		msg := fmt.Sprintf("Invalid claim 'Roles', expected: '%s'", *c.expectedRole)
+		return errors.New(msg)
+	}
+
+	/*
+	 * The scp claim is a single string where scopes are seperated by a
+	 * whitespace.
+	 */
+	scopes := strings.Fields(c.Scopes)
+	validScope := c.validate(scopes, c.expectedScope)
+	if !validScope {
+		msg := fmt.Sprintf("Invalid claim 'Scope', expected: '%s'", *c.expectedScope)
 		return errors.New(msg)
 	}
 
@@ -231,8 +245,11 @@ func (c *CustomClaims) validate(claims []string, expected *string) bool {
 	return contains(claims, *expected)
 }
 
-func NewCustomClaims(expRole *string) *CustomClaims {
-	return &CustomClaims{ expectedRole: expRole }
+func NewCustomClaims(expRole *string, expScope *string) *CustomClaims {
+	return &CustomClaims{
+		expectedRole:  expRole,
+		expectedScope: expScope,
+	}
 }
 
 
