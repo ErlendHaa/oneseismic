@@ -234,9 +234,10 @@ func JWTvalidation(
 	issuer   string,
 	audience string,
 	keyFunc  func(context.Context) (interface{}, error),
+	claims   *CustomClaims,
 ) gin.HandlerFunc {
 	customClaims := func() validator.CustomClaims {
-		return &CustomClaims{}
+		return claims
 	}
 
 	jwtValidator, err := validator.New(

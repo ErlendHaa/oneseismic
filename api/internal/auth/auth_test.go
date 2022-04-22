@@ -296,6 +296,7 @@ func TestJWTValidation(t *testing.T) {
 			"valid issuer",
 			"valid audience",
 			testcase.keyFunc,
+			&CustomClaims{},
 		)
 
 		r.GET("/graphql", tokenValidation)

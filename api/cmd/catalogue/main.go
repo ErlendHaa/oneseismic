@@ -102,6 +102,7 @@ func main() {
 		opts.authserver,
 		opts.audience,
 		provider.KeyFunc,
+		&auth.CustomClaims{},
 	)
 
 	app := gin.Default()
