@@ -193,6 +193,8 @@ func ResultAuth(keyring *Keyring) gin.HandlerFunc {
  */
 type CustomClaims struct {
 	Roles []string `json:"roles"`
+
+	expectedRole *string
 }
 
 /*
@@ -209,12 +211,25 @@ func (c *CustomClaims) Validate(ctx context.Context) error {
 		return false
 	}
 
-	readRole := contains(c.Roles, "Read")
+	/* If expectedRole is not configured with a value there is no expectations
+	 * w.r.t. to the role-claim and it's considered valid.
+	 */
+	if c.expectedRole == nil {
+		return nil
+	}
+
+	readRole := contains(c.Roles, *c.expectedRole)
 	if !readRole {
-		return errors.New("Invalid Roles Claim, expected to find: 'Read'")
+		msg := fmt.Sprintf("Invalid claim 'Roles', expected: '%s'", *c.expectedRole)
+		return errors.New(msg)
 	}
 	return nil
 }
+
+func NewCustomClaims(expRole *string) *CustomClaims {
+	return &CustomClaims{ expectedRole: expRole }
+}
+
 
 func GetJwksProvider(issuer string) *jwkeyset.CachingProvider {
 	issuerURL, err := url.Parse(issuer)

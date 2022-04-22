@@ -97,12 +97,15 @@ func main() {
 
 	gql := catalogue.MakeGraphQL(client)
 
+	role := "Read"
+	customClaims := auth.NewCustomClaims(&role)
+
 	provider := auth.GetJwksProvider(opts.authserver)
 	tokenvalidator := auth.JWTvalidation(
 		opts.authserver,
 		opts.audience,
 		provider.KeyFunc,
-		&auth.CustomClaims{},
+		customClaims,
 	)
 
 	app := gin.Default()

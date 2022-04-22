@@ -292,11 +292,14 @@ func TestJWTValidation(t *testing.T) {
 		w := httptest.NewRecorder()
 		ctx, r := gin.CreateTestContext(w)
 
+		role := "Read"
+		customClaims := NewCustomClaims(&role)
+
 		tokenValidation := JWTvalidation(
 			"valid issuer",
 			"valid audience",
 			testcase.keyFunc,
-			&CustomClaims{},
+			customClaims,
 		)
 
 		r.GET("/graphql", tokenValidation)
