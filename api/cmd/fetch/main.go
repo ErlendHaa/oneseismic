@@ -171,7 +171,7 @@ func main() {
 		Password: opts.redisPassword,
 		DB:       0,
 	}
-
+	log.Printf("REDISURL: %s", opts.redisURL)
 	if opts.secureConnections {
 		redisOptions.TLSConfig = &tls.Config{
 			MinVersion: tls.VersionTLS12,

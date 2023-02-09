@@ -1,0 +1,90 @@
+apiVersion: radix.equinor.com/v1
+kind: RadixApplication
+metadata:
+  name: one-test
+spec:
+  environments:
+    - name: dev
+      build:
+        from: dev
+  components:
+    - name: nginx
+      monitoring: true
+      dockerfileName: Dockerfile.nginx
+      ports:
+        - name: http
+          port: 8080
+      publicPort: http
+    - name: query
+      monitoring: true
+      dockerfileName: Dockerfile.query
+      ports:
+        - name: http
+          port: 8080
+      secrets:
+        - REDIS_PASSWORD
+        - STORAGE_URL
+        - SIGN_KEY
+      environmentConfig:
+        - environment: dev
+          variables:
+            REDIS_URL: "redis:6379"
+          resources:
+            requests:
+              memory: "4096Mi"
+              cpu: "2000m"
+          horizontalScaling:
+            minReplicas: 1
+            maxReplicas: 1
+    - name: fetch
+      monitoring: true
+      dockerfileName: Dockerfile.fetch
+      ports:
+        - name: http
+          port: 8080
+      secrets:
+        - REDIS_PASSWORD
+      environmentConfig:
+        - environment: dev
+          variables:
+            REDIS_URL: "redis:6379"
+          resources:
+            requests:
+              memory: "4096Mi"
+              cpu: "2000m"
+          horizontalScaling:
+            minReplicas: 4
+            maxReplicas: 4
+    - name: result
+      monitoring: true
+      dockerfileName: Dockerfile.result
+      ports:
+        - name: http
+          port: 8080
+      secrets:
+        - REDIS_PASSWORD
+      environmentConfig:
+        - environment: dev
+          variables:
+            REDIS_URL: "redis:6379"
+          resources:
+            requests:
+              memory: "4096Mi"
+              cpu: "2000m"
+          horizontalScaling:
+            minReplicas: 1
+            maxReplicas: 1
+    - name: storage
+      monitoring: true
+      image: bitnami/redis
+      ports:
+        - name: redis
+          port: 6379
+      secrets:
+        - REDIS_PASSWORD
+      environmentConfig:
+        - environment: dev
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "200m"

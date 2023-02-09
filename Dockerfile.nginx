@@ -1,0 +1,11 @@
+FROM nginxinc/nginx-unprivileged:1.18
+COPY nginx.conf nginx.conf
+
+USER 0
+
+RUN chown -R nginx /etc/nginx/conf.d
+
+USER 101
+
+EXPOSE 8080
+CMD ["nginx", "-V", "-g", "daemon off;", "-c", "nginx.conf"]

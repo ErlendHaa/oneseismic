@@ -1,0 +1,9 @@
+FROM bitnami/redis:5.0.3
+
+COPY redis.conf /opt/bitnami/redis/etc/redis.conf
+
+EXPOSE 6379
+
+USER 1001
+ENTRYPOINT [ "/entrypoint.sh" ]
+CMD [ "/run.sh" ]
